@@ -12,9 +12,7 @@ for i = 1 : length( subdir )
         end
     end
     if ~isempty(strfind(subdir(i).name,'.mat'))
-
         correspond_file=subdir(i).name;
-        
         graph.edge{edgeNum}.idx=str2double(regexp(correspond_file,'\d','match'));
         load(correspond_file);
         graph.edge{edgeNum}.pair_points=pair_points;

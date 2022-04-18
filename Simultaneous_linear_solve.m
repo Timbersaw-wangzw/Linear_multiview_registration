@@ -19,7 +19,7 @@ for i=1:edge_num
     bz=pair_points(6,:);
     temp_points=zeros(6*node_num,1);
     A_temp={};
-    parfor j=1:corre_num
+    for j=1:corre_num/100
         Aj=zeros(4,6*node_num);
         va=[ax(j);ay(j);az(j);1];
         vb=[bx(j);by(j);bz(j);1];
@@ -34,6 +34,7 @@ for i=1:edge_num
         A=A+A_temp{j};
         b=b-temp_points(:,j);
     end
+    %% test LDU factorization
 end
 x=A\b;
 end
