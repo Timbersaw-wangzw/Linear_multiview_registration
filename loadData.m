@@ -1,16 +1,24 @@
-clc
-clear
 inputdata='.\highspeedtrain';
 addpath(inputdata);
 subdir  = dir( fullfile(inputdata) );
 nodeNum=1;
+edgeNum=1;
 for i = 1 : length( subdir )
+    if ~isempty(strfind(subdir(i).name,'.txt'))
+        if isempty(strfind(subdir(i).name,'filter'))
+            graph.node{nodeNum}.filePath=subdir(i).name;
+            graph.node{nodeNum}.idx=nodeNum;
+            nodeNum=nodeNum+1;
+        end
+    end
     if ~isempty(strfind(subdir(i).name,'.mat'))
+
         correspond_file=subdir(i).name;
-        graph.node(nodeNum).filePath=correspond_file;
-        graph.edge{nodeNum}.idx=str2double(regexp(correspond,'\d','match'));
+        
+        graph.edge{edgeNum}.idx=str2double(regexp(correspond_file,'\d','match'));
         load(correspond_file);
-        nodeNum=nodeNum+1;
+        graph.edge{edgeNum}.pair_points=pair_points;
+        edgeNum=edgeNum+1;
     end
 end
 
@@ -43,6 +51,20 @@ end
 % graph.edge{13}.idx=[6,7];
 % graph.edge{13}.correspondences=[3,5];
 % edge_num=length(graph.edge);
+
+% idx_p=graph.edge{2}.idx(1);
+% idx_q=graph.edge{2}.idx(2);
+% AreaPt1=importdata(graph.node{idx_p}.filePath);
+% AreaPt2=importdata(graph.node{idx_q}.filePath);
+% AreaPt1=AreaPt1(:,1:3);
+% AreaPt2=AreaPt2(:,1:3);
+% hold on 
+% axis off
+% AreaPt1=[AreaPt1,ones(length(AreaPt1(:,1)), 1)]';
+% AreaPt2=[AreaPt2,ones(length(AreaPt2(:,1)), 1)]';
+% plot3(AreaPt1(1,:),AreaPt1(2,:),AreaPt1(3,:),'.','MarkerSize',0.5);
+% plot3(AreaPt2(1,:),AreaPt2(2,:),AreaPt2(3,:),'.','MarkerSize',0.5);
+% [pt1,pt2]=FilterPoints(AreaPt1,AreaPt2);
 % for i=1:edge_num
 %     idx_p=graph.edge{i}.idx(1);
 %     idx_q=graph.edge{i}.idx(2);
@@ -50,7 +72,7 @@ end
 %     AreaPt2=importdata(graph.node(idx_q).filePath);
 %     AreaPt1=AreaPt1(:,1:3);
 %     AreaPt2=AreaPt2(:,1:3);
-%
+% 
 %     AreaPt1=[AreaPt1,ones(length(AreaPt1(:,1)), 1)]';
 %     AreaPt2=[AreaPt2,ones(length(AreaPt2(:,1)), 1)]';
 %     [pt1,pt2]=FilterPoints(AreaPt1,AreaPt2);
