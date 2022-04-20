@@ -1,45 +1,82 @@
- function update_grpah= Simultaneous_linear_solve(init_graph)
+function update_grpah= Simultaneous_linear_solve(init_graph)
 %SIMULTANEOUS simultaneous solve r and t by linear
 %   init_graph stors all the infos about node
 edge_num=length(init_graph.edge);
-node_num=length(init_graph.node);
+node_num=length(init_graph.node)-1;
 % A=zeros(4,6*edge_num);
 b=zeros(6*node_num,1);
 A=zeros(6*node_num,6*node_num);
+anchor_idx=1;
 for i=1:edge_num
-    corre_num=length(init_graph.edge{i}.pair_points);
-    pair_points=init_graph.edge{i}.pair_points;
+%     corre_num=floor(length(init_graph.edge{i}.pair_points)/100);
+    corre_num=init_graph.edge{i}.pair_points_1.Count;
+    fprintf('edge index:%d, correspondence points number: %d\n',[i,init_graph.edge{i}.pair_points_1.Count]);
     idx_a=init_graph.edge{i}.idx(1);
     idx_b=init_graph.edge{i}.idx(2);
-    ax=pair_points(1,:);
-    ay=pair_points(2,:);
-    az=pair_points(3,:);
-    bx=pair_points(4,:);
-    by=pair_points(5,:);
-    bz=pair_points(6,:);
+    
+    ax=init_graph.edge{i}.pair_points_1.Location(:,1);
+    ay=init_graph.edge{i}.pair_points_1.Location(:,2);
+    az=init_graph.edge{i}.pair_points_1.Location(:,3);
+
+    bx=init_graph.edge{i}.pair_points_2.Location(:,1);
+    by=init_graph.edge{i}.pair_points_2.Location(:,2);
+    bz=init_graph.edge{i}.pair_points_2.Location(:,3);
+
     temp_points=zeros(6*node_num,1);
     A_temp={};
-    % test LDU factorization
-%     [L,D,U]=LDU(pair_points);
-    parfor j=1:corre_num
-        Aj=zeros(4,6*node_num);
-        va=[ax(j);ay(j);az(j);1];
-        vb=[bx(j);by(j);bz(j);1];
-        Ma=dotVec(va);
-        Mb=-1*dotVec(vb);
-        Aj(:,(idx_a-1)*6+1:idx_a*6)=Ma;
-        Aj(:,(idx_b-1)*6+1:idx_b*6)=Mb;
-        A_temp{j}=Aj'*Aj;
-        temp_points(:,j)=Aj'*(va-vb);
+    if idx_a~=anchor_idx&&idx_b~=anchor_idx
+        if idx_a>anchor_idx
+            a=idx_a-1;
+        end
+        if idx_b>anchor_idx
+            b=idx_b-1;
+        end
+        parfor j=1:corre_num
+            Aj=zeros(4,6*node_num);
+            va=[ax(j);ay(j);az(j);1];
+            vb=[bx(j);by(j);bz(j);1];
+            Ma=dotVec(va);
+            Mb=-1*dotVec(vb);
+            Aj(:,(a-1)*6+1:a*6)=Ma;
+            Aj(:,(b-1)*6+1:b*6)=Mb;
+            A_temp{j}=Aj'*Aj;
+            temp_points(:,j)=Aj'*(va-vb);
+        end
+    end
+    if idx_a==anchor_idx
+        if idx_b>anchor_idx
+            b=idx_b-1;
+        end
+        parfor j=1:corre_num
+            Aj=zeros(4,6*node_num);
+            va=[ax(j);ay(j);az(j);1];
+            vb=[bx(j);by(j);bz(j);1];
+            Mb=-1*dotVec(vb);
+            Aj(:,(b-1)*6+1:b*6)=Mb;
+            A_temp{j}=Aj'*Aj;
+            temp_points(:,j)=Aj'*(va-vb);
+        end
+    end
+    if idx_b==anchor_idx
+        if idx_a>anchor_idx
+            a=idx_a-1;
+        end
+        parfor j=1:corre_num
+            Aj=zeros(4,6*node_num);
+            va=[ax(j);ay(j);az(j);1];
+            vb=[bx(j);by(j);bz(j);1];
+            Ma=dotVec(va);
+            Aj(:,(a-1)*6+1:a*6)=Ma;
+            A_temp{j}=Aj'*Aj;
+            temp_points(:,j)=Aj'*(va-vb);
+        end
     end
     for j=1:corre_num
         A=A+A_temp{j};
         b=b-temp_points(:,j);
     end
-    
 end
-v=1e-5*rand(48,1);
-lambda=1e-5*diag(v);
+lambda=5*diag(ones(6*node_num,1));
 x=(A+lambda)\b;
 end
 function [L,D,U]=LDU(pair_points)

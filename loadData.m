@@ -15,7 +15,28 @@ for i = 1 : length( subdir )
         correspond_file=subdir(i).name;
         graph.edge{edgeNum}.idx=str2double(regexp(correspond_file,'\d','match'));
         load(correspond_file);
-        graph.edge{edgeNum}.pair_points=pair_points;
+%         graph.edge{edgeNum}.pair_points=pair_points;
+        temp_source_points=pointCloud(pair_points(1:3,:)');
+        temp_target_points=pointCloud(pair_points(4:6,:)');
+        %         figure(1);
+        %         pcshowpair(source_points,target_points);
+%         gridStep = 2;
+%         [source_points,idx] = pcdownsample(temp_source_points,'gridAverage',gridStep);
+        
+%                 ptCloud2 = pcdownsample(target_points,'gridAverage',gridStep);
+        
+%         [ptCloud1,test] = pcdownsample(source_points,'random',0.5);
+%         ptCloud2 = pcdownsample(target_points,'random',0.5);
+        %         figure(2);
+%                 pcshowpair(ptCloud1,ptCloud2);
+%         [source_points,idx] = pcdownsample(temp_target_points,'random',0.5);
+        [source_points,idx]  = pcdownsample(temp_target_points,'nonuniformGridSample',6);
+        target_points=select(temp_target_points,idx);
+        graph.edge{edgeNum}.pair_points_1 = source_points;
+        graph.edge{edgeNum}.pair_points_2 = target_points;
+        if source_points(:,1)==target_points(:,1)
+            fprintf('test');
+        end
         edgeNum=edgeNum+1;
     end
 end
@@ -56,7 +77,7 @@ end
 % AreaPt2=importdata(graph.node{idx_q}.filePath);
 % AreaPt1=AreaPt1(:,1:3);
 % AreaPt2=AreaPt2(:,1:3);
-% hold on 
+% hold on
 % axis off
 % AreaPt1=[AreaPt1,ones(length(AreaPt1(:,1)), 1)]';
 % AreaPt2=[AreaPt2,ones(length(AreaPt2(:,1)), 1)]';
@@ -70,7 +91,7 @@ end
 %     AreaPt2=importdata(graph.node(idx_q).filePath);
 %     AreaPt1=AreaPt1(:,1:3);
 %     AreaPt2=AreaPt2(:,1:3);
-% 
+%
 %     AreaPt1=[AreaPt1,ones(length(AreaPt1(:,1)), 1)]';
 %     AreaPt2=[AreaPt2,ones(length(AreaPt2(:,1)), 1)]';
 %     [pt1,pt2]=FilterPoints(AreaPt1,AreaPt2);
