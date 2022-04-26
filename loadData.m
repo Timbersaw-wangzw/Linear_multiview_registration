@@ -32,8 +32,9 @@ for i = 1 : length( subdir )
 %         [source_points,idx] = pcdownsample(temp_target_points,'random',0.5);
         [source_points,idx]  = pcdownsample(temp_target_points,'nonuniformGridSample',6);
         target_points=select(temp_target_points,idx);
-        graph.edge{edgeNum}.pair_points_1 = source_points;
-        graph.edge{edgeNum}.pair_points_2 = target_points;
+        graph.edge{edgeNum}.orgin_pair_points_1 = source_points;
+        graph.edge{edgeNum}.orgin_pair_points_2 = target_points;
+        graph.edge{edgeNum}.relative_pair_points_2 = target_points;
         if source_points(:,1)==target_points(:,1)
             fprintf('test');
         end

@@ -19,8 +19,8 @@ for v=1:node_num+1
     T=SE3.exp(vec);
     init_graph.node{v}.T=T;
 end
-for e=3:edge_num
-%     corre_num=floor(length(init_graph.edge{i}.pair_points)/100);
+for e=1:edge_num
+    %     corre_num=floor(length(init_graph.edge{i}.pair_points)/100);
     corre_num=init_graph.edge{e}.pair_points_1.Count;
     fprintf('edge index:%d, correspondence points number: %d\n',[e,init_graph.edge{e}.pair_points_1.Count]);
     idx_i=init_graph.edge{e}.idx(1);
@@ -28,6 +28,11 @@ for e=3:edge_num
     Ti=init_graph.node{idx_i}.T;
     Tj=init_graph.node{idx_j}.T;
 
+    init_graph.edge{e}.matrix_p0=zeros(6,6);
+    init_graph.edge{e}.matrix_q0=zeros(6,6);
+    init_graph.edge{e}.sum_skew_p0=zeros(3,3);
+    init_graph.edge{e}.sum_skew_q0=zeros(3,3);
+    init_graph.edge{e}.sum_sum_qp0=zeros(3,3);
 
     xi=init_graph.edge{e}.pair_points_1.Location(:,1);
     yi=init_graph.edge{e}.pair_points_1.Location(:,2);
@@ -38,13 +43,14 @@ for e=3:edge_num
     zj=init_graph.edge{e}.pair_points_2.Location(:,3);
 
     temp_points=zeros(6*node_num,1);
-    A_temp={};
+    matrix_p0_temp={};
     A_temp_compare={};
     a_temp={};
-    skew_p_temp={};
-    skew_q_temp={};
-    qp_temp={};
+    skew_p0_temp={};
+    skew_q0_temp={};
+    qp0_temp={};
     if idx_i~=anchor_idx&&idx_j~=anchor_idx
+        type='no anchor';
         if idx_i>anchor_idx
             i=idx_i-1;
         end
@@ -52,18 +58,20 @@ for e=3:edge_num
             j=idx_j-1;
         end
         parfor k=1:corre_num
-            Ak=zeros(4,6*node_num);
+            Ak0=zeros(4,6*node_num);
             p0=[xi(k);yi(k);zi(k);1];
             q0=[xj(k);yj(k);zj(k);1];
             Mi0=dotVec(p0);
             Mj0=-1*dotVec(q0);
-            Ak(:,(i-1)*6+1:i*6)=Mi0;
-            Ak(:,(j-1)*6+1:j*6)=Mj0;
-            A_temp{k}=Ak'*Ak;
-            temp_points(:,k)=Ak'*(p0-q0);
-            skew_p_temp{k}=skew(p0(1:3));
-            skew_q_temp{k}=skew(q0(1:3));
-            qp_temp{k}=q0(1:3)*p0(1:3)';
+            Ak0(:,(i-1)*6+1:i*6)=Mi0;
+            Ak0(:,(j-1)*6+1:j*6)=Mj0;
+            matrix_p0_temp{k}=Mi0'*Mi0;
+            matrix_q0_temp{k}=Mj0'*Mj0;
+
+            temp_points(:,k)=Ak0'*(p0-q0);
+            skew_p0_temp{k}=skew(p0(1:3));
+            skew_q0_temp{k}=skew(q0(1:3));
+            qp0_temp{k}=q0(1:3)*p0(1:3)';
 
 
             Ak_compare=zeros(4,6*node_num);
@@ -77,18 +85,19 @@ for e=3:edge_num
         end
     end
     if idx_i==anchor_idx
+        type='anchor i';
         if idx_j>anchor_idx
             j=idx_j-1;
         end
         parfor k=1:corre_num
-            Ak=zeros(4,6*node_num);
-            p0=[xi(k);yi(k);zi(k);1];
+            %             Ak0=zeros(4,6*node_num);
+            %             p0=[xi(k);yi(k);zi(k);1];
             q0=[xj(k);yj(k);zj(k);1];
             Mj0=-1*dotVec(q0);
-            Ak(:,(j-1)*6+1:j*6)=Mj0;
-            a_temp{k}=Mj0'*Mj0;
-            A_temp{k}=Ak'*Ak;
-            temp_points(:,k)=Ak'*(p0-q0);
+            %             Ak0(:,(j-1)*6+1:j*6)=Mj0;
+
+            matrix_q0_temp{k}=Mj0'*Mj0;
+            %             temp_points(:,k)=Ak0'*(p0-q0);
 
             Ak_compare=zeros(4,6*node_num);
             q=double(Tj)*[xi(k);yi(k);zi(k);1];
@@ -98,17 +107,18 @@ for e=3:edge_num
         end
     end
     if idx_j==anchor_idx
+        type='anchor j';
         if idx_i>anchor_idx
             i=idx_i-1;
         end
         parfor k=1:corre_num
-            Ak=zeros(4,6*node_num);
+            Ak0=zeros(4,6*node_num);
             p0=[xi(k);yi(k);zi(k);1];
             q0=[xj(k);yj(k);zj(k);1];
             Mi0=dotVec(p0);
-            Ak(:,(i-1)*6+1:i*6)=Mi0;
-            A_temp{k}=Ak'*Ak;
-            temp_points(:,k)=Ak'*(p0-q0);
+            Ak0(:,(i-1)*6+1:i*6)=Mi0;
+            matrix_p0_temp{k}=Ak0'*Ak0;
+            temp_points(:,k)=Ak0'*(p0-q0);
 
             Ak_compare=zeros(4,6*node_num);
             p=double(Ti)*[xi(k);yi(k);zi(k);1];
@@ -118,21 +128,28 @@ for e=3:edge_num
             A_temp_compare{k}=Ak_compare'*Ak_compare;
         end
     end
-    a=zeros(6,6);
-    sum_skew_p=zeros(3,3);
-    sum_skew_q=zeros(3,3);
-    sum_qp=zeros(3,3);
+
     for k=1:corre_num
-        A=A+A_temp{k};
-        j=j-temp_points(:,k);
-%         a=a+a_temp{k};
-        sum_skew_p=sum_skew_p+skew_p_temp{k};
-        sum_skew_q=sum_skew_q+skew_q_temp{k};
-        sum_qp=sum_qp+qp_temp{k};
+        switch type
+            case 'no anchor'
+                init_graph.edge{e}.matrix_p0=init_graph.edge{e}.matrix_p0+matrix_p0_temp{k};
+                init_graph.edge{e}.matrix_q0=init_graph.edge{e}.matrix_q0+matrix_q0_temp{k};
+                init_graph.edge{e}.sum_skew_p0=init_graph.edge{e}.sum_skew_p0+skew_p0_temp{k};
+                init_graph.edge{e}.sum_skew_q0=init_graph.edge{e}.sum_skew_q0+skew_q0_temp{k};
+                init_graph.edge{e}.sum_skew_qp0=init_graph.edge{e}.sum_skew_qp0+qp0_temp{k};
+            case 'anchor i'
+                init_graph.edge{e}.matrix_q0=init_graph.edge{e}.matrix_q0+matrix_q0_temp{k};
+            case 'anchor j'
+                init_graph.edge{e}.matrix_p0=init_graph.edge{e}.matrix_p0+matrix_p0_temp{k};
+        end
+
         A_compare=A_compare+A_temp_compare{k};
     end
-    M=getDiagnoalBlock(Tj,A(1:6,1:6));
-    M1=getNonDiagnoalBlock(sum_skew_p,sum_skew_q,sum_qp,Ti,Tj,corre_num);
+    M1=getDiagnoalBlock(Ti,init_graph.edge{e}.matrix_p0);
+    M2=getNonDiagnoalBlock(init_graph.edge{e}.sum_skew_p0,init_graph.edge{e}.sum_skew_q0,...
+        init_graph.edge{e}.sum_skew_qp0,...
+        Ti,Tj,corre_num);
+    M3=getDiagnoalBlock(Ti,init_graph.edge{e}.matrix_q0);
 end
 % lambda=5*diag(ones(6*node_num,1));
 x=A\j;
