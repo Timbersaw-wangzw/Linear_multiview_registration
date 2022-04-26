@@ -29,8 +29,8 @@ for i = 1 : length( subdir )
 %         ptCloud2 = pcdownsample(target_points,'random',0.5);
         %         figure(2);
 %                 pcshowpair(ptCloud1,ptCloud2);
-%         [source_points,idx] = pcdownsample(temp_target_points,'random',0.5);
-        [source_points,idx]  = pcdownsample(temp_target_points,'nonuniformGridSample',6);
+%         [source_points,idx] = pcdownsample(temp_source_points,'random',0.5);
+        [source_points,idx]  = pcdownsample(temp_source_points,'nonuniformGridSample',6);
         target_points=select(temp_target_points,idx);
         graph.edge{edgeNum}.orgin_pair_points_1 = source_points;
         graph.edge{edgeNum}.orgin_pair_points_2 = target_points;
