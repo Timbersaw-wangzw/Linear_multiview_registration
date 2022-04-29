@@ -32,5 +32,7 @@ addpath('../IRLS')
 % end
 
 loadData;
-lambda=5*diag(ones(48,1));
-Simultaneous_GN_solve(graph);
+% Simultaneous_GN_solve(graph);
+% simultaneous_Manifold(graph);
+% graph = cloest_solution_multiICP_noAnchor(graph);
+graph = cloest_solution_multiICP_anchor(graph);

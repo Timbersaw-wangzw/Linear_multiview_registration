@@ -1,48 +1,39 @@
 inputdata='.\highspeedtrain';
 addpath(inputdata);
 subdir  = dir( fullfile(inputdata) );
-nodeNum=1;
-edgeNum=1;
+node_num=1;
+edge_num=1;
 for i = 1 : length( subdir )
     if ~isempty(strfind(subdir(i).name,'.txt'))
         if isempty(strfind(subdir(i).name,'filter'))
-            graph.node{nodeNum}.filePath=subdir(i).name;
-            graph.node{nodeNum}.idx=nodeNum;
-            nodeNum=nodeNum+1;
+            graph.node{node_num}.filePath=subdir(i).name;
+            graph.node{node_num}.idx=node_num;
+            node_num=node_num+1;
         end
     end
     if ~isempty(strfind(subdir(i).name,'.mat'))
         correspond_file=subdir(i).name;
-        graph.edge{edgeNum}.idx=str2double(regexp(correspond_file,'\d','match'));
+        graph.edge{edge_num}.idx=str2double(regexp(correspond_file,'\d','match'));
         load(correspond_file);
 %         graph.edge{edgeNum}.pair_points=pair_points;
         temp_source_points=pointCloud(pair_points(1:3,:)');
         temp_target_points=pointCloud(pair_points(4:6,:)');
-        %         figure(1);
-        %         pcshowpair(source_points,target_points);
-%         gridStep = 2;
-%         [source_points,idx] = pcdownsample(temp_source_points,'gridAverage',gridStep);
-        
-%                 ptCloud2 = pcdownsample(target_points,'gridAverage',gridStep);
-        
-%         [ptCloud1,test] = pcdownsample(source_points,'random',0.5);
-%         ptCloud2 = pcdownsample(target_points,'random',0.5);
-        %         figure(2);
-%                 pcshowpair(ptCloud1,ptCloud2);
-%         [source_points,idx] = pcdownsample(temp_source_points,'random',0.5);
         [source_points,idx]  = pcdownsample(temp_source_points,'nonuniformGridSample',6);
         target_points=select(temp_target_points,idx);
-        graph.edge{edgeNum}.orgin_pair_points_1 = source_points;
-        graph.edge{edgeNum}.orgin_pair_points_2 = target_points;
-        graph.edge{edgeNum}.relative_pair_points_2 = target_points;
+        [T,moving,rmse] = pcregistericp(source_points,target_points);
+        graph.edge{edge_num}.orgin_pair_points_1 = source_points;
+        graph.edge{edge_num}.orgin_pair_points_2 = target_points;
+        graph.edge{edge_num}.relative_pair_points_2 = target_points;
         if source_points(:,1)==target_points(:,1)
             fprintf('test');
         end
-        edgeNum=edgeNum+1;
+        edge_num=edge_num+1;
     end
 end
-
-
+for i=1:node_num-1
+    graph.node{i}.T=SE3.exp([0,0,0,0,0,0]);
+end
+graph=getMultiRegError(graph);
 % 提前获取边信息
 % graph.edge{1}.idx=[1,2];
 % graph.edge{1}.correspondences=[1,2];

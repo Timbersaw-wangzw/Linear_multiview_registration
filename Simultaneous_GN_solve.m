@@ -16,16 +16,17 @@ fprintf('end inital matrix \n');
 fprintf('iteration: 0/%d, error: %.3f\n',max_multi_icp,init_graph.rmse);
 for iter=1:max_multi_icp
     [A,b]=updateMatrix(graph);
-    x=A\(-b);
+    lambda=100000*eye(6*node_num);
+    x=(A+lambda)\(-1*b);
     % update pose
-    for v=2:node_num
+    for v=1:node_num
         w=x((v-1)*6+1:6*v);
         T=SE3.exp(w);
-        graph.node{v}.T=T;
+        graph.node{v+1}.T=T*graph.node{v+1}.T;
     end
     % calculate error
     graph=getMultiRegError(graph);
-    err_list(i+1)=graph.rmse;
+    err_list(iter+1)=graph.rmse;
     fprintf('iteration: %d/%d, error: %.3f\n',iter,max_multi_icp,graph.rmse);
 end
 end
